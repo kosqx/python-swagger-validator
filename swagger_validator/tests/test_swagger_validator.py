@@ -7,6 +7,7 @@ import pytest
 
 
 from swagger_validator import SwaggerValidator
+from swagger_validator.core import OperationLookup
 
 
 SPECIFICATION = {
@@ -17,7 +18,47 @@ SPECIFICATION = {
         "description": "This is Example API used for tests",
         "title": "Example API"
     },
-    "apis": [],
+    "apis": [
+        {
+            "operations": [
+                {
+                    "method": "GET",
+                    "nickname": "notes_get",
+                },
+                {
+                    "method": "POST",
+                    "nickname": "notes_post",
+                },
+            ],
+            "path": "/notes/"
+        },
+        {
+            "operations": [
+                {
+                    "method": "GET",
+                    "nickname": "note_get",
+                },
+                {
+                    "method": "PUT",
+                    "nickname": "note_put",
+                },
+                {
+                    "method": "DELETE",
+                    "nickname": "note_delete",
+                },
+            ],
+            "path": "/note/{note_id}/"
+        },
+        {
+            "operations": [
+                {
+                    "method": "GET",
+                    "nickname": "info_get",
+                },
+            ],
+            "path": "/info/"
+        },
+    ],
     "models": {
         "Person": {
             "description": "Person details",
@@ -85,3 +126,30 @@ def test_validate_missing_model():
     errors = [{'code': 'model_missing', 'path': ['User']}]
     validator = SwaggerValidator(SPECIFICATION)
     assert format_errors(validator.validate_model('User', doc)) == errors
+
+
+OPERATION_LOOKUP_CASES = [
+    ('GET', '/foo/', None),
+
+    ('GET', '/info/', 'info_get'),
+    ('GET', '/foo/info/', None),
+    ('GET', '/info/bar/', None),
+
+    ('GET', '/notes/', 'notes_get'),
+    ('POST', '/notes/', 'notes_post'),
+
+    ('GET', '/note/123/', 'note_get'),
+    ('PUT', '/note/123/', 'note_put'),
+    ('DELETE', '/note/123/', 'note_delete'),
+
+    ('GET', '/note//', 'note_get'),
+    ('GET', '/note/123', None),
+
+
+]
+
+
+@pytest.mark.parametrize(('method', 'path', 'nickname'), OPERATION_LOOKUP_CASES)
+def test_operation_lookup(method, path, nickname):
+    lookup = OperationLookup(SPECIFICATION['apis'])
+    assert (lookup.get(method, path) or {}).get('nickname') == nickname

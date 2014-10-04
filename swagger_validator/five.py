@@ -15,7 +15,6 @@ if not PY2:
     text_type = str
     string_types = (str,)
     integer_types = (int,)
-    unichr = chr
 else:
     binary_type = str
     text_type = unicode

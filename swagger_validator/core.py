@@ -3,7 +3,38 @@
 from __future__ import with_statement, division, absolute_import, print_function
 
 
+import re
+
+
 from swagger_validator import five
+
+
+class OperationLookup(object):
+    def __init__(self, apis):
+        self.table = []
+
+        for endpoint in apis:
+            for operation in endpoint['operations']:
+                self.table.append((
+                    operation['method'],
+                    self._compile_path(endpoint['path']),
+                    operation,
+                ))
+
+    @classmethod
+    def _compile_path(cls, path):
+        parts = re.split('\{(\w+)\}', path)
+        regexp = ''.join([
+            re.escape(part) if i % 2 == 0 else '[^/]*'
+            for i, part in enumerate(parts)
+        ])
+        print(regexp)
+        return re.compile(regexp + '$')
+
+    def get(self, method, path):
+        for table_method, table_path, table_result in self.table:
+            if method == table_method and table_path.match(path):
+                return table_result
 
 
 class SwaggerValidator(object):
