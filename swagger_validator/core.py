@@ -3,15 +3,18 @@
 from __future__ import with_statement, division, absolute_import, print_function
 
 
+from swagger_validator import five
+
+
 class SwaggerValidator(object):
     def __init__(self, spec):
         self.spec = spec
 
     SIMPLE_TYPES = {
         'bool': (bool, ()),
-        'string': (basestring, ()),
-        'integer': ((int, long), bool),
-        'float': ((int, long, float), bool),
+        'string': (five.string_types, ()),
+        'integer': (five.integer_types, bool),
+        'float': (five.integer_types + (float,), bool),
     }
 
     def validate_simple_type(self, type_spec, value):
