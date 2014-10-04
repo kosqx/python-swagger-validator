@@ -1,40 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-
-DATA = {
-    "swaggerVersion": 1.2,
-    "apiVersion": "1.0.0",
-    "basePath": "/",
-    "info": {
-        "description": "This is Example API used for tests", 
-        "title": "Example API"
-    },
-    "apis": [],
-    "models": {
-        "Person": {
-            "description": "Person details", 
-            "id": "Person", 
-            "properties": {
-                "name": {
-                    "description": "Person name", 
-                    "type": "string",
-                    "enum": ["Tom", "Alice"],
-                }, 
-                "age": {
-                    "description": "Person age", 
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 80,
-                }
-            }, 
-            "required": [
-                "name", 
-                "age"
-            ]
-        }
-    }
-}
+from __future__ import with_statement, division, absolute_import, print_function
 
 
 class SwaggerValidator(object):
@@ -87,7 +53,6 @@ class SwaggerValidator(object):
 
         return result
 
-
     def validate_model(self, model_name, model_instance):
         if model_name not in self.spec['models']:
             return [
@@ -126,45 +91,3 @@ class SwaggerValidator(object):
                     result.append(sr)
 
         return result
-
-
-def format_errors(errors):
-    return [
-        {'code': error['code'], 'path': error.get('path', [])}
-        for error in errors
-    ]
-
-
-def simple_tests():
-    validator = SwaggerValidator(DATA)
-
-    assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': 30})) == []
-
-    assert format_errors(validator.validate_model('User', {'name': 'Tom', 'age': 30})) == [{'code': 'model_missing', 'path': ['User']}]
-
-    assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': '30'})) == [{'code': 'type_invalid', 'path': ['Person', 'age']}]
-    assert format_errors(validator.validate_model('Person', {'name': 44, 'age': 30})) == [{'code': 'type_invalid', 'path': ['Person', 'name']}]
-    
-    assert format_errors(validator.validate_model('Person', {'name': 'Tom'})) == [{'code': 'property_missing', 'path': ['Person', 'age']}]
-    assert format_errors(validator.validate_model('Person', {'age': 30})) == [{'code': 'property_missing', 'path': ['Person', 'name']}]
-
-    assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': 30, 'hobby': 'bike'})) == [{'code': 'property_undeclared', 'path': ['Person', 'hobby']}]
-
-    assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': 90})) == [{'code': 'type_constraint', 'path': ['Person', 'age', 'maximum']}]
-    assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': -5})) == [{'code': 'type_constraint', 'path': ['Person', 'age', 'minimum']}]
-
-    assert format_errors(validator.validate_model('Person', {'name': 'Bob', 'age': 30})) == [{'code': 'type_constraint', 'path': ['Person', 'name', 'enum']}]
-
-    assert format_errors(validator.validate_model('Person', {'age': '30', 'hobby': 'bike'})) == [
-        {'code': 'property_missing', 'path': ['Person', 'name']},
-        {'code': 'property_undeclared', 'path': ['Person', 'hobby']},
-        {'code': 'type_invalid', 'path': ['Person', 'age']},
-    ]
-
-
-if __name__ == '__main__':
-    simple_tests()
-
-    validator = SwaggerValidator(DATA)
-    for i in format_errors(validator.validate_model('Person', {'age': '30', 'hobby': 'bike'})):
-        print i

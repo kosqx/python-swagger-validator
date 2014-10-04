@@ -4,3 +4,6 @@ from __future__ import with_statement, division, absolute_import, print_function
 
 
 __version__ = '0.1.0'
+
+
+from swagger_validator.core import SwaggerValidator
