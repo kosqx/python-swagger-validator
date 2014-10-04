@@ -18,11 +18,14 @@ DATA = {
             "properties": {
                 "name": {
                     "description": "Person name", 
-                    "type": "string"
+                    "type": "string",
+                    "enum": ["Tom", "Alice"],
                 }, 
                 "age": {
                     "description": "Person age", 
-                    "type": "integer"
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 80,
                 }
             }, 
             "required": [
@@ -34,34 +37,56 @@ DATA = {
 }
 
 
-def validate_simple_type(type_name, value):
-    if type_name == 'bool':
-        if not isinstance(value, bool):
-            return [
-                {'code': 'type_invalid', 'msg': 'expected bool got %r' % value},
-            ]
-    elif type_name == 'string':
-        if not isinstance(value, basestring):
-            return [
-                {'code': 'type_invalid', 'msg': 'expected string got %r' % value},
-            ]
-    elif type_name == 'integer':
-        if not isinstance(value, (int, long)) or isinstance(value, bool):
-            return [
-                {'code': 'type_invalid', 'msg': 'expected integer got %r' % value},
-            ]
-    elif type_name == 'float':
-        if not isinstance(value, (int, long, float)) or isinstance(value, bool):
-            return [
-                {'code': 'type_invalid', 'msg': 'expected float got %r' % value},
-            ]
-
-    return None
-
-
 class SwaggerValidator(object):
     def __init__(self, spec):
         self.spec = spec
+
+    SIMPLE_TYPES = {
+        'bool': (bool, ()),
+        'string': (basestring, ()),
+        'integer': ((int, long), bool),
+        'float': ((int, long, float), bool),
+    }
+
+    def validate_simple_type(self, type_spec, value):
+        type_name = type_spec.get('type', 'string')
+        if type_name not in self.SIMPLE_TYPES:
+            return None
+
+        type_inc, type_exc = self.SIMPLE_TYPES[type_name]
+        if not isinstance(value, type_inc) or isinstance(value, type_exc):
+            return [{
+                'code': 'type_invalid',
+                'msg': 'expected %s got %r' % (type_name, value),
+            }]
+
+        result = []
+
+        if type_name == 'string':
+            if 'enum' in type_spec and value not in type_spec['enum']:
+                result.append({
+                    'code': 'type_constraint',
+                    'path': ['enum'],
+                    'msg': 'expected integer got %r' % value,
+                })
+
+        if type_name in ('integer', 'float'):
+            if 'minimum' in type_spec and value < float(type_spec['minimum']):
+                result.append({
+                    'code': 'type_constraint',
+                    'path': ['minimum'],
+                    'msg': 'expected not less than %r got %r' % (type_spec['maximum'], value),
+                })
+
+            if 'maximum' in type_spec and value > float(type_spec['maximum']):
+                result.append({
+                    'code': 'type_constraint',
+                    'path': ['maximum'],
+                    'msg': 'expected not more than %r got %r' % (type_spec['maximum'], value),
+                })
+
+        return result
+
 
     def validate_model(self, model_name, model_instance):
         if model_name not in self.spec['models']:
@@ -92,12 +117,12 @@ class SwaggerValidator(object):
             if property_name not in model_instance:
                 continue
 
-            simple_result = validate_simple_type(property_spec.get('type', 'string'), model_instance[property_name])
+            simple_result = self.validate_simple_type(property_spec, model_instance[property_name])
             if simple_result is None:
                 pass
             elif simple_result:
                 for sr in simple_result:
-                    sr['path'] = [model_name, property_name]
+                    sr['path'] = [model_name, property_name] + sr.get('path', [])
                     result.append(sr)
 
         return result
@@ -124,6 +149,11 @@ def simple_tests():
     assert format_errors(validator.validate_model('Person', {'age': 30})) == [{'code': 'property_missing', 'path': ['Person', 'name']}]
 
     assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': 30, 'hobby': 'bike'})) == [{'code': 'property_undeclared', 'path': ['Person', 'hobby']}]
+
+    assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': 90})) == [{'code': 'type_constraint', 'path': ['Person', 'age', 'maximum']}]
+    assert format_errors(validator.validate_model('Person', {'name': 'Tom', 'age': -5})) == [{'code': 'type_constraint', 'path': ['Person', 'age', 'minimum']}]
+
+    assert format_errors(validator.validate_model('Person', {'name': 'Bob', 'age': 30})) == [{'code': 'type_constraint', 'path': ['Person', 'name', 'enum']}]
 
     assert format_errors(validator.validate_model('Person', {'age': '30', 'hobby': 'bike'})) == [
         {'code': 'property_missing', 'path': ['Person', 'name']},
