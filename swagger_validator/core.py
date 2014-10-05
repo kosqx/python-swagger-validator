@@ -91,7 +91,7 @@ class SwaggerValidator(object):
                 })
         if type_name == 'array' and 'items' in type_spec:
             for item_index, item_value in enumerate(value):
-                item_results = self.validate_type(type_spec['items'], item_value)
+                item_results = self.validate_type_or_model(type_spec['items'], item_value)
                 for ir in item_results:
                     ir['path'] = ['items', str(item_index)] + ir.get('path', [])
                     result.append(ir)
@@ -136,6 +136,14 @@ class SwaggerValidator(object):
                     result.append(sr)
 
         return result
+
+    def validate_type_or_model(self, type_spec, value):
+        result = self.validate_type(type_spec, value)
+
+        if result is not None:
+            return result
+        else:
+            return self.validate_model(type_spec['type'], value)
 
     def validate_request(self, request):
         method = request['method'].upper()

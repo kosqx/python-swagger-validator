@@ -231,6 +231,19 @@ VALIDATE_TYPE_CASES = [
         [1],
         [{'code': 'type_invalid', 'path': ['items', '0']}],
     ),
+
+    # array of models
+    (
+        {"type": "array", "items": {"type": "Person"}},
+        [{"name": "Alice", "age": 25}, {"name": "Tom", "age": 30}],
+        [],
+    ),
+    (
+        {"type": "array", "items": {"type": "Person"}},
+        [{"name": "Alice", "age": 25}, {"name": "Tom", "age": '30'}],
+        [{'code': 'type_invalid', 'path': ['items', '1', 'Person', 'age']}],
+    ),
+
 ]
 
 
@@ -238,6 +251,40 @@ VALIDATE_TYPE_CASES = [
 def test_validate_type(spec, value, errors):
     validator = SwaggerValidator(SPECIFICATION)
     assert format_errors(validator.validate_type(spec, value)) == errors
+
+
+VALIDATE_TYPE_OR_MODEL_CASES = [
+    (
+        {"type": "integer", "minimum": 0, "maximum": 80},
+        30,
+        [],
+    ),
+    (
+        {"type": "integer", "minimum": 0, "maximum": 80},
+        -30,
+        [{'code': 'type_constraint', 'path': ['minimum']}],
+    ),
+
+    (
+        {"type": "Person"},
+        {"name": "Alice", "age": 25},
+        [],
+    ),
+    (
+        {"type": "Person"},
+        {},
+        [
+            {'code': 'property_missing', 'path': ['Person', 'name']},
+            {'code': 'property_missing', 'path': ['Person', 'age']},
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize(('spec', 'value', 'errors'), VALIDATE_TYPE_OR_MODEL_CASES)
+def test_validate_type_or_model(spec, value, errors):
+    validator = SwaggerValidator(SPECIFICATION)
+    assert format_errors(validator.validate_type_or_model(spec, value)) == errors
 
 
 OPERATION_LOOKUP_CASES = [
