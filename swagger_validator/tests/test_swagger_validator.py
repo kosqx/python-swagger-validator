@@ -129,27 +129,33 @@ def test_validate_missing_model():
 
 
 OPERATION_LOOKUP_CASES = [
-    ('GET', '/foo/', None),
+    ('GET', '/foo/', None, None),
 
-    ('GET', '/info/', 'info_get'),
-    ('GET', '/foo/info/', None),
-    ('GET', '/info/bar/', None),
+    ('GET', '/info/', 'info_get', {}),
+    ('GET', '/foo/info/', None, None),
+    ('GET', '/info/bar/', None, None),
 
-    ('GET', '/notes/', 'notes_get'),
-    ('POST', '/notes/', 'notes_post'),
+    ('GET', '/notes/', 'notes_get', {}),
+    ('POST', '/notes/', 'notes_post', {}),
 
-    ('GET', '/note/123/', 'note_get'),
-    ('PUT', '/note/123/', 'note_put'),
-    ('DELETE', '/note/123/', 'note_delete'),
+    ('GET', '/note/123/', 'note_get', {'note_id': '123'}),
+    ('PUT', '/note/123/', 'note_put', {'note_id': '123'}),
+    ('DELETE', '/note/123/', 'note_delete', {'note_id': '123'}),
 
-    ('GET', '/note//', 'note_get'),
-    ('GET', '/note/123', None),
-
-
+    ('GET', '/note//', 'note_get', {'note_id': ''}),
+    ('GET', '/note/123', None, None),
 ]
 
 
-@pytest.mark.parametrize(('method', 'path', 'nickname'), OPERATION_LOOKUP_CASES)
-def test_operation_lookup(method, path, nickname):
+@pytest.mark.parametrize(
+    ('method', 'path', 'nickname', 'params'),
+    OPERATION_LOOKUP_CASES
+)
+def test_operation_lookup(method, path, nickname, params):
     lookup = OperationLookup(SPECIFICATION['apis'])
-    assert (lookup.get(method, path) or {}).get('nickname') == nickname
+    operation, path_params = lookup.get(method, path)
+    if operation is None:
+        assert nickname is None
+    else:
+        assert operation.get('nickname') == nickname
+        assert path_params == params

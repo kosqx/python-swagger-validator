@@ -25,16 +25,19 @@ class OperationLookup(object):
     def _compile_path(cls, path):
         parts = re.split('\{(\w+)\}', path)
         regexp = ''.join([
-            re.escape(part) if i % 2 == 0 else '[^/]*'
+            re.escape(part) if i % 2 == 0 else '(?P<' + part + '>[^/]*)'
             for i, part in enumerate(parts)
         ])
-        print(regexp)
         return re.compile(regexp + '$')
 
     def get(self, method, path):
         for table_method, table_path, table_result in self.table:
-            if method == table_method and table_path.match(path):
-                return table_result
+            if method == table_method:
+                match = table_path.match(path)
+                if match:
+                    return table_result, match.groupdict()
+
+        return None, None
 
 
 class SwaggerValidator(object):
