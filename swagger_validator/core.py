@@ -50,9 +50,10 @@ class SwaggerValidator(object):
         'string': (five.string_types, ()),
         'integer': (five.integer_types, bool),
         'float': (five.integer_types + (float,), bool),
+        'array': (list, ()),
     }
 
-    def validate_simple_type(self, type_spec, value):
+    def validate_type(self, type_spec, value):
         type_name = type_spec.get('type', 'string')
         if type_name not in self.SIMPLE_TYPES:
             return None
@@ -88,6 +89,12 @@ class SwaggerValidator(object):
                     'path': ['maximum'],
                     'msg': 'expected not more than %r got %r' % (type_spec['maximum'], value),
                 })
+        if type_name == 'array' and 'items' in type_spec:
+            for item_index, item_value in enumerate(value):
+                item_results = self.validate_type(type_spec['items'], item_value)
+                for ir in item_results:
+                    ir['path'] = ['items', str(item_index)] + ir.get('path', [])
+                    result.append(ir)
 
         return result
 
@@ -120,7 +127,7 @@ class SwaggerValidator(object):
             if property_name not in model_instance:
                 continue
 
-            simple_result = self.validate_simple_type(property_spec, model_instance[property_name])
+            simple_result = self.validate_type(property_spec, model_instance[property_name])
             if simple_result is None:
                 pass
             elif simple_result:

@@ -160,6 +160,86 @@ def test_validate_missing_model():
     assert format_errors(validator.validate_model('User', doc)) == errors
 
 
+VALIDATE_TYPE_CASES = [
+    (
+        {"type": "integer", "minimum": 0, "maximum": 80},
+        0,
+        [],
+    ),
+    (
+        {"type": "integer", "minimum": 0, "maximum": 80},
+        30,
+        [],
+    ),
+    (
+        {"type": "integer", "minimum": 0, "maximum": 80},
+        80,
+        [],
+    ),
+    (
+        {"type": "integer", "minimum": 0, "maximum": 80},
+        -30,
+        [{'code': 'type_constraint', 'path': ['minimum']}],
+    ),
+    (
+        {"type": "integer", "minimum": 0, "maximum": 80},
+        100,
+        [{'code': 'type_constraint', 'path': ['maximum']}],
+    ),
+    (
+        {"type": "string", "enum": ["cat", "dog"]},
+        "cat",
+        [],
+    ),
+    (
+        {"type": "string", "enum": ["cat", "dog"]},
+        "fish",
+        [{'code': 'type_constraint', 'path': ['enum']}],
+    ),
+
+    # array
+    (
+        {"type": "array"},
+        ["foo", "bar"],
+        [],
+    ),
+    (
+        {"type": "array"},
+        [1, 2],
+        [],
+    ),
+    (
+        {"type": "array", "items": {"type": "string"}},
+        ["foo", "bar"],
+        [],
+    ),
+    (
+        {"type": "array", "items": {"type": "integer"}},
+        [1, 2, 1],
+        [],
+    ),
+    (
+        {"type": "array", "items": {"type": "integer"}},
+        ["foo", "bar"],
+        [
+            {'code': 'type_invalid', 'path': ['items', '0']},
+            {'code': 'type_invalid', 'path': ['items', '1']},
+        ],
+    ),
+    (
+        {"type": "array", "items": {"type": "string"}},
+        [1],
+        [{'code': 'type_invalid', 'path': ['items', '0']}],
+    ),
+]
+
+
+@pytest.mark.parametrize(('spec', 'value', 'errors'), VALIDATE_TYPE_CASES)
+def test_validate_type(spec, value, errors):
+    validator = SwaggerValidator(SPECIFICATION)
+    assert format_errors(validator.validate_type(spec, value)) == errors
+
+
 OPERATION_LOOKUP_CASES = [
     ('GET', '/foo/', None, None),
 
