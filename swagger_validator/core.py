@@ -127,7 +127,7 @@ class SwaggerValidator(object):
             if property_name not in model_instance:
                 continue
 
-            simple_result = self.validate_type(property_spec, model_instance[property_name])
+            simple_result = self.validate_type_or_model(property_spec, model_instance[property_name])
             if simple_result is None:
                 pass
             elif simple_result:

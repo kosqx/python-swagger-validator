@@ -105,14 +105,37 @@ SPECIFICATION = {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 80,
-                }
+                },
+                "hobbies": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                    },
+                },
+                "pets": {
+                    "type": "array",
+                    "items": {
+                        "type": "Pet",
+                    },
+                },
             },
             "required": [
                 "name",
                 "age"
-            ]
-        }
-    }
+            ],
+        },
+        "Pet": {
+            "id": "Pet",
+            "properties": {
+                "species": {
+                    "type": "string",
+                },
+                "name": {
+                    "type": "string",
+                },
+            },
+        },
+    },
 }
 
 
@@ -136,6 +159,15 @@ VALIDATE_MODEL_CASES = [
         {'code': 'property_missing', 'path': ['Person', 'name']},
         {'code': 'property_undeclared', 'path': ['Person', 'hobby']},
         {'code': 'type_invalid', 'path': ['Person', 'age']},
+    ]),
+
+    ({'name': 'Tom', 'age': 30, 'hobbies': []}, []),
+    ({'name': 'Tom', 'age': 30, 'hobbies': ['fishing']}, []),
+    ({'name': 'Tom', 'age': 30, 'pets': []}, []),
+    ({'name': 'Tom', 'age': 30, 'pets': [{'species': 'cat', 'name': 'Purr'}]}, []),
+
+    ({'name': 'Tom', 'age': 30, 'pets': [{'species': 8472, 'name': 'Purr'}]}, [
+        {'code': 'type_invalid', 'path': ['Person', 'pets', 'items', '0', 'Pet', 'species']}
     ]),
 ]
 
