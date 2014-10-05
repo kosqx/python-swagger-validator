@@ -140,6 +140,57 @@ class SwaggerValidator(object):
                 {'code': 'operation_missing', 'path': [method, path]},
             ]
 
+        # skipping verification - by design
+        if 'parameters' not in operation:
+            return []
+
         validation_results = []
+
+        declared_query_params = set(
+            parameter_spec['name']
+            for parameter_spec in operation['parameters']
+            if parameter_spec['paramType'] == 'query'
+        )
+        for query_param_name in request.get('query', {}):
+            if query_param_name not in declared_query_params:
+                validation_results.append(
+                    {'code': 'parameter_undeclared', 'path': [method, path, 'query', query_param_name]},
+                )
+
+        for parameter_spec in operation['parameters']:
+            param_type = parameter_spec['paramType']
+            param_name = parameter_spec['name']
+
+            if param_type == 'body':
+                if param_name in request:
+                    pass
+                elif parameter_spec.get('required', False):
+                    validation_results.append(
+                        {'code': 'parameter_missing', 'path': [method, path, 'body', param_name]},
+                    )
+            elif param_type == 'header':
+                if param_name in request.get('headers', {}):
+                    pass
+                elif parameter_spec.get('required', False):
+                    validation_results.append(
+                        {'code': 'parameter_missing', 'path': [method, path, 'header', param_name]},
+                    )
+            elif param_type == 'path':
+                if param_name in path_parameters:
+                    pass
+                else:
+                    # 'path' params are always required
+                    validation_results.append(
+                        {'code': 'parameter_missing', 'path': [method, path, 'path', param_name]},
+                    )
+            elif param_type == 'query':
+                if param_name in request.get('query', {}):
+                    pass
+                elif parameter_spec.get('required', False):
+                    validation_results.append(
+                        {'code': 'parameter_missing', 'path': [method, path, 'query', param_name]},
+                    )
+            else:
+                pass  # unsupported
 
         return validation_results

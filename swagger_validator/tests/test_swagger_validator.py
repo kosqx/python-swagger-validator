@@ -41,6 +41,37 @@ SPECIFICATION = {
                 {
                     "method": "PUT",
                     "nickname": "note_put",
+                    "parameters": [
+                        {
+                            "name": "body",
+                            "paramType": "body",
+                            "required": True,
+                            "type": "Person",
+                        },
+                        {
+                            "name": "X-VERSION",
+                            "paramType": "header",
+                            "required": True,
+                            "type": "string",
+                        },
+                        {
+                            "name": "note_id",
+                            "paramType": "path",
+                            "type": "string",
+                        },
+                        {
+                            "name": "force",
+                            "paramType": "query",
+                            "type": "integer",
+                            "required": True,
+                        },
+                        {
+                            "name": "hint",
+                            "paramType": "query",
+                            "type": "integer",
+                            "required": False,
+                        },
+                    ],
                 },
                 {
                     "method": "DELETE",
@@ -83,6 +114,7 @@ SPECIFICATION = {
         }
     }
 }
+
 
 VALIDATE_MODEL_CASES = [
     ({'name': 'Tom', 'age': 30}, []),
@@ -165,6 +197,22 @@ VALIDATE_REQUEST_CASES = [
     ({'method': 'GET', 'path': '/note/123/'}, []),
     ({'method': 'POST', 'path': '/note/123/'}, [{'code': 'operation_missing', 'path': ['POST', '/note/123/']}]),
     ({'method': 'GET', 'path': '/missing'}, [{'code': 'operation_missing', 'path': ['GET', '/missing']}]),
+
+    (
+        {
+            'method': 'PUT',
+            'path': '/note/123/',
+            'query': {
+                "foo": "bar",
+            }
+        },
+        [
+            {'code': 'parameter_undeclared', 'path': ['PUT', '/note/123/', 'query', 'foo']},
+            {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'body', 'body']},
+            {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'header', 'X-VERSION']},
+            {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'query', 'force']},
+        ]
+    ),
 ]
 
 
