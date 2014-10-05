@@ -9,6 +9,12 @@ import re
 from swagger_validator import five
 
 
+def prepend_path(errors, prefix):
+    for error in errors:
+        error['path'] = prefix + error.get('path', [])
+    return errors
+
+
 class OperationLookup(object):
     def __init__(self, apis):
         self.table = []
@@ -65,11 +71,11 @@ class SwaggerValidator(object):
                 'msg': 'expected %s got %r' % (type_name, value),
             }]
 
-        result = []
+        validation_results = []
 
         if type_name == 'string':
             if 'enum' in type_spec and value not in type_spec['enum']:
-                result.append({
+                validation_results.append({
                     'code': 'type_constraint',
                     'path': ['enum'],
                     'msg': 'expected integer got %r' % value,
@@ -77,14 +83,14 @@ class SwaggerValidator(object):
 
         if type_name in ('integer', 'float'):
             if 'minimum' in type_spec and value < float(type_spec['minimum']):
-                result.append({
+                validation_results.append({
                     'code': 'type_constraint',
                     'path': ['minimum'],
                     'msg': 'expected not less than %r got %r' % (type_spec['maximum'], value),
                 })
 
             if 'maximum' in type_spec and value > float(type_spec['maximum']):
-                result.append({
+                validation_results.append({
                     'code': 'type_constraint',
                     'path': ['maximum'],
                     'msg': 'expected not more than %r got %r' % (type_spec['maximum'], value),
@@ -92,11 +98,9 @@ class SwaggerValidator(object):
         if type_name == 'array' and 'items' in type_spec:
             for item_index, item_value in enumerate(value):
                 item_results = self.validate_type_or_model(type_spec['items'], item_value)
-                for ir in item_results:
-                    ir['path'] = ['items', str(item_index)] + ir.get('path', [])
-                    result.append(ir)
+                validation_results.extend(prepend_path(item_results, ['items', str(item_index)]))
 
-        return result
+        return validation_results
 
     def validate_model(self, model_name, model_instance):
         if model_name not in self.spec['models']:
@@ -104,7 +108,7 @@ class SwaggerValidator(object):
                 {'code': 'model_missing', 'path': [model_name]},
             ]
 
-        result = []
+        validation_results = []
 
         model_spec = self.spec['models'][model_name]
 
@@ -112,14 +116,14 @@ class SwaggerValidator(object):
 
         for required_property in model_spec.get('required', []):
             if required_property not in model_instance:
-                result.append(
+                validation_results.append(
                     {'code': 'property_missing', 'path': [model_name, required_property]},
                 )
 
         declared_properties = set(model_spec.get('properties', {}))
 
         for undeclared_property in sorted(keys - declared_properties):
-            result.append(
+            validation_results.append(
                 {'code': 'property_undeclared', 'path': [model_name, undeclared_property]},
             )
 
@@ -128,20 +132,15 @@ class SwaggerValidator(object):
                 continue
 
             simple_result = self.validate_type_or_model(property_spec, model_instance[property_name])
-            if simple_result is None:
-                pass
-            elif simple_result:
-                for sr in simple_result:
-                    sr['path'] = [model_name, property_name] + sr.get('path', [])
-                    result.append(sr)
+            validation_results.extend(prepend_path(simple_result, [model_name, property_name]))
 
-        return result
+        return validation_results
 
     def validate_type_or_model(self, type_spec, value):
-        result = self.validate_type(type_spec, value)
+        validation_results = self.validate_type(type_spec, value)
 
-        if result is not None:
-            return result
+        if validation_results is not None:
+            return validation_results
         else:
             return self.validate_model(type_spec['type'], value)
 
