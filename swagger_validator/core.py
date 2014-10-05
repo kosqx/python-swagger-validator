@@ -43,6 +43,7 @@ class OperationLookup(object):
 class SwaggerValidator(object):
     def __init__(self, spec):
         self.spec = spec
+        self.lookup = OperationLookup(spec['apis'])
 
     SIMPLE_TYPES = {
         'bool': (bool, ()),
@@ -128,3 +129,17 @@ class SwaggerValidator(object):
                     result.append(sr)
 
         return result
+
+    def validate_request(self, request):
+        method = request['method'].upper()
+        path = request['path']
+        operation, path_parameters = self.lookup.get(method, path)
+
+        if operation is None:
+            return [
+                {'code': 'operation_missing', 'path': [method, path]},
+            ]
+
+        validation_results = []
+
+        return validation_results

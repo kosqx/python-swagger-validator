@@ -159,3 +159,17 @@ def test_operation_lookup(method, path, nickname, params):
     else:
         assert operation.get('nickname') == nickname
         assert path_params == params
+
+
+VALIDATE_REQUEST_CASES = [
+    ({'method': 'GET', 'path': '/note/123/'}, []),
+    ({'method': 'POST', 'path': '/note/123/'}, [{'code': 'operation_missing', 'path': ['POST', '/note/123/']}]),
+    ({'method': 'GET', 'path': '/missing'}, [{'code': 'operation_missing', 'path': ['GET', '/missing']}]),
+]
+
+
+# for some reason pytest treats 'request' in a special way, which breaks test
+@pytest.mark.parametrize(('request_', 'errors'), VALIDATE_REQUEST_CASES)
+def test_validate_request(request_, errors):
+    validator = SwaggerValidator(SPECIFICATION)
+    assert validator.validate_request(request_) == errors
