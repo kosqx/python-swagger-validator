@@ -199,7 +199,8 @@ class SwaggerValidator(object):
 
             if param_type == 'body':
                 if param_name in request:
-                    pass
+                    body_results = self.validate_type_or_model(parameter_spec, request[param_name])
+                    validation_results.extend(prepend_path(body_results, [method, path, 'body', param_name]))
                 elif parameter_spec.get('required', False):
                     validation_results.append(
                         {'code': 'parameter_missing', 'path': [method, path, 'body', param_name]},

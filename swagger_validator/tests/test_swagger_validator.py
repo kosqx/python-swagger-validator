@@ -467,6 +467,39 @@ VALIDATE_REQUEST_CASES = [
             {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'query', 'force']},
         ]
     ),
+
+    (
+        {
+            'method': 'PUT',
+            'path': '/note/123/',
+            'body': {},
+            'headers': {
+                'X-VERSION': '',
+            },
+            'query': {
+                "force": "1",
+            },
+        },
+        [
+            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'body', 'Person', 'name']},
+            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'body', 'Person', 'age']}
+        ]
+    ),
+
+    (
+        {
+            'method': 'PUT',
+            'path': '/note/123/',
+            'body': {"name": "Alice", "age": 25},
+            'headers': {
+                'X-VERSION': '',
+            },
+            'query': {
+                "force": "1",
+            },
+        },
+        []
+    ),
 ]
 
 
