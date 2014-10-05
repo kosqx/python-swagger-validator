@@ -51,6 +51,28 @@ class SwaggerValidator(object):
         self.spec = spec
         self.lookup = OperationLookup(spec['apis'])
 
+    def merge(self, spec):
+        merge_results = []
+
+        apis_mapping = dict((api['path'], api) for api in self.spec['apis'])
+        for api in spec.get('apis', []):
+            if api['path'] in apis_mapping:
+                if api != apis_mapping[api['path']]:
+                    merge_results.append({'code': 'merge_apis_conflict', 'path': [api['path']]})
+            else:
+                self.spec['apis'].append(api)
+
+        for model_name, model_spec in spec.get('models', {}).items():
+            if model_name in self.spec['models']:
+                if model_spec != self.spec['models'][model_name]:
+                    merge_results.append({'code': 'merge_model_conflict', 'path': [model_name]})
+            else:
+                self.spec['models'][model_name] = model_spec
+
+        self.lookup = OperationLookup(self.spec['apis'])
+
+        return merge_results
+
     SIMPLE_TYPES = {
         'bool': (bool, ()),
         'string': (five.string_types, ()),

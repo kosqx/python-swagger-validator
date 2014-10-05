@@ -3,6 +3,9 @@
 from __future__ import with_statement, division, absolute_import, print_function
 
 
+import copy
+
+
 import pytest
 
 
@@ -139,6 +142,105 @@ SPECIFICATION = {
 }
 
 
+def format_errors(errors):
+    return [
+        {'code': error['code'], 'path': error.get('path', [])}
+        for error in errors
+    ]
+
+
+MERGE_CASES = [
+    ({}, []),
+
+    (
+        {
+            'models': {
+                'Pet': {}
+            }
+        },
+        [{'code': 'merge_model_conflict', 'path': ['Pet']}]
+    ),
+    (
+        {
+            'models': {
+                "Pet": {
+                    "id": "Pet",
+                    "properties": {
+                        "species": {
+                            "type": "string",
+                        },
+                        "name": {
+                            "type": "string",
+                        },
+                    },
+                },
+            },
+        },
+        []
+    ),
+
+    (
+        {
+            "apis": [
+                {
+                    "operations": [
+                        {
+                            "method": "GET",
+                            "nickname": "merge_test_get",
+                        },
+                    ],
+                    "path": "/merge/test/"
+                },
+            ],
+        },
+        []
+    ),
+    (
+        {
+            "apis": [
+                {
+                    "operations": [
+                        {
+                            "method": "GET",
+                            "nickname": "merge_test_get",
+                        },
+                    ],
+                    "path": "/info/"
+                },
+            ],
+        },
+        [{'code': 'merge_apis_conflict', 'path': ['/info/']}]
+    ),
+]
+
+
+@pytest.mark.parametrize(('spec', 'errors'), MERGE_CASES)
+def test_merge(spec, errors):
+    validator = SwaggerValidator(copy.deepcopy(SPECIFICATION))
+    assert validator.merge(spec) == errors
+
+
+def test_merge_api():
+    validator = SwaggerValidator(copy.deepcopy(SPECIFICATION))
+    request = {'method': 'GET', 'path': '/merge/test/'}
+
+    assert validator.validate_request(request) == [{'code': 'operation_missing', 'path': ['GET', '/merge/test/']}]
+    validator.merge({
+        "apis": [
+            {
+                "operations": [
+                    {
+                        "method": "GET",
+                        "nickname": "merge_test_get",
+                    },
+                ],
+                "path": "/merge/test/"
+            },
+        ],
+    })
+    assert validator.validate_request(request) == []
+
+
 VALIDATE_MODEL_CASES = [
     ({'name': 'Tom', 'age': 30}, []),
 
@@ -170,13 +272,6 @@ VALIDATE_MODEL_CASES = [
         {'code': 'type_invalid', 'path': ['Person', 'pets', 'items', '0', 'Pet', 'species']}
     ]),
 ]
-
-
-def format_errors(errors):
-    return [
-        {'code': error['code'], 'path': error.get('path', [])}
-        for error in errors
-    ]
 
 
 @pytest.mark.parametrize(('doc', 'errors'), VALIDATE_MODEL_CASES)
