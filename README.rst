@@ -1,2 +1,4 @@
-swagger_validator - Python Swagger Validator
---------------------------------------------
+Python Swagger Validator
+------------------------
+
+Early alpha!

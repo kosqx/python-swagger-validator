@@ -35,7 +35,7 @@ class PyTest(TestCommand):
 setup(
     name='swagger_validator',
     version=swagger_validator.__version__,
-    url='http://github.com/kosqx/swagger_validator/',
+    url='https://github.com/kosqx/python-swagger-validator',
     license='BSD',
     author='Krzysztof Kosyl',
     tests_require=['pytest'],
