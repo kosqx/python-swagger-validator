@@ -44,6 +44,7 @@ SPECIFICATION = {
                 {
                     "method": "PUT",
                     "nickname": "note_put",
+                    "type": "Person",
                     "parameters": [
                         {
                             "name": "body",
@@ -508,3 +509,30 @@ VALIDATE_REQUEST_CASES = [
 def test_validate_request(request_, errors):
     validator = SwaggerValidator(SPECIFICATION)
     assert validator.validate_request(request_) == errors
+
+
+VALIDATE_RESPONSE_CASES = [
+    ({'method': 'GET', 'path': '/note/123/'}, []),
+    ({'method': 'POST', 'path': '/note/123/'}, [{'code': 'operation_missing', 'path': ['POST', '/note/123/']}]),
+    ({'method': 'GET', 'path': '/missing'}, [{'code': 'operation_missing', 'path': ['GET', '/missing']}]),
+
+    (
+        {'method': 'PUT', 'path': '/note/123/', 'data': {}},
+        [
+            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'data', 'Person', 'name']},
+            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'data', 'Person', 'age']}
+        ]
+    ),
+
+    (
+        {'method': 'PUT', 'path': '/note/123/', 'data': {"name": "Alice", "age": 25}},
+        []
+    ),
+]
+
+
+# for some reason pytest treats 'request' in a special way, which breaks test
+@pytest.mark.parametrize(('response_', 'errors'), VALIDATE_RESPONSE_CASES)
+def test_validate_response(response_, errors):
+    validator = SwaggerValidator(SPECIFICATION)
+    assert validator.validate_response(response_) == errors

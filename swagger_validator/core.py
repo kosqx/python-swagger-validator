@@ -231,3 +231,20 @@ class SwaggerValidator(object):
                 pass  # unsupported
 
         return validation_results
+
+    def validate_response(self, response):
+        method = response['method'].upper()
+        path = response['path']
+        operation, path_parameters = self.lookup.get(method, path)
+
+        if operation is None:
+            return [
+                {'code': 'operation_missing', 'path': [method, path]},
+            ]
+
+        # skipping verification - by design
+        if 'data' not in response:
+            return []
+
+        body_results = self.validate_type_or_model(operation, response['data'])
+        return prepend_path(body_results, [method, path, 'data'])
