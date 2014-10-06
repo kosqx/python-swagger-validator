@@ -15,6 +15,17 @@ def prepend_path(errors, prefix):
     return errors
 
 
+def convert_type(new_type, value):
+    if new_type == 'string':
+        return value
+    elif new_type == 'integer':
+        return int(value, 10)
+    elif new_type == 'float':
+        return float(value)
+    else:
+        raise ValueError(new_type)
+
+
 class OperationLookup(object):
     def __init__(self, apis):
         self.table = []
@@ -207,7 +218,15 @@ class SwaggerValidator(object):
                     )
             elif param_type == 'header':
                 if param_name in request.get('headers', {}):
-                    pass
+                    header_value = request['headers'][param_name]
+                    try:
+                        header_value = convert_type(parameter_spec['type'], header_value)
+                        header_results = self.validate_type_or_model(parameter_spec, header_value)
+                        validation_results.extend(prepend_path(header_results, [method, path, 'header', param_name]))
+                    except ValueError:
+                        validation_results.append(
+                            {'code': 'type_convert', 'path': [method, path, 'header', param_name]},
+                        )
                 elif parameter_spec.get('required', False):
                     validation_results.append(
                         {'code': 'parameter_missing', 'path': [method, path, 'header', param_name]},
@@ -222,7 +241,15 @@ class SwaggerValidator(object):
                     )
             elif param_type == 'query':
                 if param_name in request.get('query', {}):
-                    pass
+                    query_value = request['query'][param_name]
+                    try:
+                        query_value = convert_type(parameter_spec['type'], query_value)
+                        query_value = self.validate_type_or_model(parameter_spec, query_value)
+                        validation_results.extend(prepend_path(query_value, [method, path, 'query', param_name]))
+                    except ValueError:
+                        validation_results.append(
+                            {'code': 'type_convert', 'path': [method, path, 'query', param_name]},
+                        )
                 elif parameter_spec.get('required', False):
                     validation_results.append(
                         {'code': 'parameter_missing', 'path': [method, path, 'query', param_name]},

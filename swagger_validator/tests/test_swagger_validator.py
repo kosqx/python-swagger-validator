@@ -56,12 +56,12 @@ SPECIFICATION = {
                             "name": "X-VERSION",
                             "paramType": "header",
                             "required": True,
-                            "type": "string",
+                            "type": "integer",
                         },
                         {
                             "name": "note_id",
                             "paramType": "path",
-                            "type": "string",
+                            "type": "integer",
                         },
                         {
                             "name": "force",
@@ -475,15 +475,17 @@ VALIDATE_REQUEST_CASES = [
             'path': '/note/123/',
             'body': {},
             'headers': {
-                'X-VERSION': '',
+                'X-VERSION': 'abc',
             },
             'query': {
-                "force": "1",
+                "force": "xyz",
             },
         },
         [
             {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'body', 'Person', 'name']},
-            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'body', 'Person', 'age']}
+            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'body', 'Person', 'age']},
+            {'code': 'type_convert', 'path': ['PUT', '/note/123/', 'header', 'X-VERSION']},
+            {'code': 'type_convert', 'path': ['PUT', '/note/123/', 'query', 'force']},
         ]
     ),
 
@@ -493,7 +495,7 @@ VALIDATE_REQUEST_CASES = [
             'path': '/note/123/',
             'body': {"name": "Alice", "age": 25},
             'headers': {
-                'X-VERSION': '',
+                'X-VERSION': '123',
             },
             'query': {
                 "force": "1",
