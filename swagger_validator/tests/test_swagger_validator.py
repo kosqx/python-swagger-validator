@@ -431,6 +431,10 @@ OPERATION_LOOKUP_CASES = [
 
     ('GET', '/note//', 'note_get', {'note_id': ''}),
     ('GET', '/note/123', None, None),
+
+    ('GET', '/ignore/me', False, None),
+    ('GET', '/note/123/foo', None, None),
+    ('GET', '/note/123/ignore', False, None),
 ]
 
 
@@ -439,9 +443,14 @@ OPERATION_LOOKUP_CASES = [
     OPERATION_LOOKUP_CASES
 )
 def test_operation_lookup(method, path, nickname, params):
-    lookup = OperationLookup(SPECIFICATION['apis'])
+    lookup = OperationLookup(
+        SPECIFICATION['apis'],
+        ignore_endpoints=[r'/ignore/.*', r'/note/\d+/ignore'],
+    )
     operation, path_params = lookup.get(method, path)
-    if operation is None:
+    if operation is False:
+        assert nickname is False
+    elif operation is None:
         assert nickname is None
     else:
         assert operation.get('nickname') == nickname
@@ -450,6 +459,7 @@ def test_operation_lookup(method, path, nickname, params):
 
 VALIDATE_REQUEST_CASES = [
     ({'method': 'GET', 'path': '/note/123/'}, []),
+    ({'method': 'GET', 'path': '/ignore/me/'}, []),
     ({'method': 'POST', 'path': '/note/123/'}, [{'code': 'operation_missing', 'path': ['POST', '/note/123/']}]),
     ({'method': 'GET', 'path': '/missing'}, [{'code': 'operation_missing', 'path': ['GET', '/missing']}]),
 
@@ -509,12 +519,16 @@ VALIDATE_REQUEST_CASES = [
 # for some reason pytest treats 'request' in a special way, which breaks test
 @pytest.mark.parametrize(('request_', 'errors'), VALIDATE_REQUEST_CASES)
 def test_validate_request(request_, errors):
-    validator = SwaggerValidator(SPECIFICATION)
+    validator = SwaggerValidator(
+        SPECIFICATION,
+        ignore_endpoints=[r'/ignore/.*', r'/note/\d+/ignore'],
+    )
     assert validator.validate_request(request_) == errors
 
 
 VALIDATE_RESPONSE_CASES = [
     ({'method': 'GET', 'path': '/note/123/'}, []),
+    ({'method': 'GET', 'path': '/ignore/me/'}, []),
     ({'method': 'POST', 'path': '/note/123/'}, [{'code': 'operation_missing', 'path': ['POST', '/note/123/']}]),
     ({'method': 'GET', 'path': '/missing'}, [{'code': 'operation_missing', 'path': ['GET', '/missing']}]),
 
@@ -536,5 +550,8 @@ VALIDATE_RESPONSE_CASES = [
 # for some reason pytest treats 'request' in a special way, which breaks test
 @pytest.mark.parametrize(('response_', 'errors'), VALIDATE_RESPONSE_CASES)
 def test_validate_response(response_, errors):
-    validator = SwaggerValidator(SPECIFICATION)
+    validator = SwaggerValidator(
+        SPECIFICATION,
+        ignore_endpoints=[r'/ignore/.*', r'/note/\d+/ignore'],
+    )
     assert validator.validate_response(response_) == errors

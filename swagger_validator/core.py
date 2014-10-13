@@ -27,8 +27,12 @@ def convert_type(new_type, value):
 
 
 class OperationLookup(object):
-    def __init__(self, apis):
+    def __init__(self, apis, ignore_endpoints=()):
         self.table = []
+        self.ignore_endpoints = [
+            re.compile(i) if isinstance(i, five.string_types) else i
+            for i in ignore_endpoints
+        ]
 
         for endpoint in apis:
             for operation in endpoint['operations']:
@@ -48,6 +52,10 @@ class OperationLookup(object):
         return re.compile(regexp + '$')
 
     def get(self, method, path):
+        for ignore in self.ignore_endpoints:
+            if ignore.match(path):
+                return False, None
+
         for table_method, table_path, table_result in self.table:
             if method == table_method:
                 match = table_path.match(path)
@@ -58,9 +66,12 @@ class OperationLookup(object):
 
 
 class SwaggerValidator(object):
-    def __init__(self, spec):
+    def __init__(self, spec, ignore_endpoints=()):
         self.spec = spec
-        self.lookup = OperationLookup(spec['apis'])
+        self.lookup = OperationLookup(
+            apis=spec['apis'],
+            ignore_endpoints=ignore_endpoints,
+        )
 
     def merge(self, spec):
         merge_results = []
@@ -182,6 +193,9 @@ class SwaggerValidator(object):
         path = request['path']
         operation, path_parameters = self.lookup.get(method, path)
 
+        if operation is False:
+            return []
+
         if operation is None:
             return [
                 {'code': 'operation_missing', 'path': [method, path]},
@@ -263,6 +277,9 @@ class SwaggerValidator(object):
         method = response['method'].upper()
         path = response['path']
         operation, path_parameters = self.lookup.get(method, path)
+
+        if operation is False:
+            return []
 
         if operation is None:
             return [
