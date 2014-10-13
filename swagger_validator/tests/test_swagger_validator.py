@@ -270,7 +270,7 @@ VALIDATE_MODEL_CASES = [
     ({'name': 'Tom', 'age': 30, 'pets': [{'species': 'cat', 'name': 'Purr'}]}, []),
 
     ({'name': 'Tom', 'age': 30, 'pets': [{'species': 8472, 'name': 'Purr'}]}, [
-        {'code': 'type_invalid', 'path': ['Person', 'pets', 'items', '0', 'Pet', 'species']}
+        {'code': 'type_invalid', 'path': ['Person', 'pets', '0', 'Pet', 'species']}
     ]),
 ]
 
@@ -350,14 +350,14 @@ VALIDATE_TYPE_CASES = [
         {"type": "array", "items": {"type": "integer"}},
         ["foo", "bar"],
         [
-            {'code': 'type_invalid', 'path': ['items', '0']},
-            {'code': 'type_invalid', 'path': ['items', '1']},
+            {'code': 'type_invalid', 'path': ['0']},
+            {'code': 'type_invalid', 'path': ['1']},
         ],
     ),
     (
         {"type": "array", "items": {"type": "string"}},
         [1],
-        [{'code': 'type_invalid', 'path': ['items', '0']}],
+        [{'code': 'type_invalid', 'path': ['0']}],
     ),
 
     # array of models
@@ -369,7 +369,7 @@ VALIDATE_TYPE_CASES = [
     (
         {"type": "array", "items": {"type": "Person"}},
         [{"name": "Alice", "age": 25}, {"name": "Tom", "age": '30'}],
-        [{'code': 'type_invalid', 'path': ['items', '1', 'Person', 'age']}],
+        [{'code': 'type_invalid', 'path': ['1', 'Person', 'age']}],
     ),
 
 ]
@@ -473,7 +473,7 @@ VALIDATE_REQUEST_CASES = [
         },
         [
             {'code': 'parameter_undeclared', 'path': ['PUT', '/note/123/', 'query', 'foo']},
-            {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'body', 'body']},
+            {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'body']},
             {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'header', 'X-VERSION']},
             {'code': 'parameter_missing', 'path': ['PUT', '/note/123/', 'query', 'force']},
         ]
@@ -492,8 +492,8 @@ VALIDATE_REQUEST_CASES = [
             },
         },
         [
-            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'body', 'Person', 'name']},
-            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'body', 'Person', 'age']},
+            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'Person', 'name']},
+            {'code': 'property_missing', 'path': ['PUT', '/note/123/', 'body', 'Person', 'age']},
             {'code': 'type_convert', 'path': ['PUT', '/note/123/', 'header', 'X-VERSION']},
             {'code': 'type_convert', 'path': ['PUT', '/note/123/', 'query', 'force']},
         ]

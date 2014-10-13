@@ -142,7 +142,7 @@ class SwaggerValidator(object):
         if type_name == 'array' and 'items' in type_spec:
             for item_index, item_value in enumerate(value):
                 item_results = self.validate_type_or_model(type_spec['items'], item_value)
-                validation_results.extend(prepend_path(item_results, ['items', str(item_index)]))
+                validation_results.extend(prepend_path(item_results, [str(item_index)]))
 
         return validation_results
 
@@ -225,10 +225,10 @@ class SwaggerValidator(object):
             if param_type == 'body':
                 if param_name in request:
                     body_results = self.validate_type_or_model(parameter_spec, request[param_name])
-                    validation_results.extend(prepend_path(body_results, [method, path, 'body', param_name]))
+                    validation_results.extend(prepend_path(body_results, [method, path, 'body']))
                 elif parameter_spec.get('required', False):
                     validation_results.append(
-                        {'code': 'parameter_missing', 'path': [method, path, 'body', param_name]},
+                        {'code': 'parameter_missing', 'path': [method, path, 'body']},
                     )
             elif param_type == 'header':
                 if param_name in request.get('headers', {}):
