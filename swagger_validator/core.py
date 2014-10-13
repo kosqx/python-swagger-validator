@@ -20,7 +20,7 @@ def convert_type(new_type, value):
         return value
     elif new_type == 'integer':
         return int(value, 10)
-    elif new_type == 'float':
+    elif new_type == 'number':
         return float(value)
     else:
         raise ValueError(new_type)
@@ -85,10 +85,10 @@ class SwaggerValidator(object):
         return merge_results
 
     SIMPLE_TYPES = {
-        'bool': (bool, ()),
+        'boolean': (bool, ()),
         'string': (five.string_types, ()),
         'integer': (five.integer_types, bool),
-        'float': (five.integer_types + (float,), bool),
+        'number': (five.integer_types + (float,), bool),
         'array': (list, ()),
     }
 
@@ -114,7 +114,7 @@ class SwaggerValidator(object):
                     'msg': 'expected integer got %r' % value,
                 })
 
-        if type_name in ('integer', 'float'):
+        if type_name in ('integer', 'number'):
             if 'minimum' in type_spec and value < float(type_spec['minimum']):
                 validation_results.append({
                     'code': 'type_constraint',
